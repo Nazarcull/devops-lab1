@@ -1,0 +1,29 @@
+## .NET
+bin/
+obj/
+*.user
+.vs/
+*.suo
+*.userprefs
+
+## Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+
+## NuGet
+*.nupkg
+packages/
+!**/packages/build/
+
+## OS
+.DS_Store
+Thumbs.db
+
+## IDE
+.idea/
+*.swp
+
+## Docker
+.dockerignore
