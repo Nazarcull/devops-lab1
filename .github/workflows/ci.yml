@@ -1,0 +1,114 @@
+name: CI Pipeline
+
+on:
+  pull_request:
+    branches: [ main, master ]
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore DevOpsLab1.sln
+
+      - name: Build solution
+        run: dotnet build DevOpsLab1.sln --no-restore --configuration Release
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore DevOpsLab1.sln
+
+      - name: Run unit tests
+        run: |
+          dotnet test DevOpsLab1.sln \
+            --no-restore \
+            --configuration Release \
+            --logger "trx;LogFileName=test-results.trx" \
+            --results-directory ./test-results \
+            --collect:"XPlat Code Coverage"
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: ./test-results
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: ./**/coverage.cobertura.xml
+
+  sonar:
+    name: SonarCloud Analysis
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Install SonarScanner
+        run: dotnet tool install --global dotnet-sonarscanner
+
+      - name: Install coverage tool
+        run: dotnet tool install --global dotnet-coverage
+
+      - name: Restore dependencies
+        run: dotnet restore DevOpsLab1.sln
+
+      - name: Begin SonarCloud scan
+        run: |
+          dotnet sonarscanner begin \
+            /k:"${{ secrets.SONAR_PROJECT_KEY }}" \
+            /o:"${{ secrets.SONAR_ORGANIZATION }}" \
+            /d:sonar.token="${{ secrets.SONAR_TOKEN }}" \
+            /d:sonar.host.url="https://sonarcloud.io" \
+            /d:sonar.cs.vscoveragexml.reportsPaths=coverage.xml \
+            /d:sonar.exclusions="**/Migrations/**"
+
+      - name: Build for analysis
+        run: dotnet build DevOpsLab1.sln --no-restore --configuration Release
+
+      - name: Collect coverage
+        run: |
+          dotnet-coverage collect \
+            "dotnet test DevOpsLab1.sln --no-restore --configuration Release" \
+            -f xml -o coverage.xml
+
+      - name: End SonarCloud scan
+        run: dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
