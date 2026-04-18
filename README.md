@@ -126,3 +126,4 @@ git commit -m "feat: initial DevOps lab 1 - containerized microservices"
 git remote add origin https://github.com/<your-username>/devops-lab1.git
 git push -u origin main
 ```
+
