@@ -1,0 +1,18 @@
+taskService:
+  image: task-service:latest
+  replicaCount: 2
+  port: 8080
+  nodePort: 30001
+
+notificationService:
+  image: notification-service:latest
+  replicaCount: 2
+  port: 8080
+  nodePort: 30002
+
+db:
+  host: mydb-postgresql
+  port: 5432
+  name: taskdb
+  user: postgres
+  password: secret

@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: task-service
+  labels:
+    app: task-service
+spec:
+  replicas: {{ .Values.taskService.replicaCount }}
+  selector:
+    matchLabels:
+      app: task-service
+  template:
+    metadata:
+      labels:
+        app: task-service
+    spec:
+      containers:
+        - name: task-service
+          image: {{ .Values.taskService.image }}
+          imagePullPolicy: Never
+          ports:
+            - containerPort: {{ .Values.taskService.port }}
+          env:
+            - name: ASPNETCORE_URLS
+              value: "http://+:{{ .Values.taskService.port }}"
+            - name: ConnectionStrings__DefaultConnection
+              value: "Host={{ .Values.db.host }};Port={{ .Values.db.port }};Database={{ .Values.db.name }};Username={{ .Values.db.user }};Password={{ .Values.db.password }}"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.taskService.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.taskService.port }}
+            initialDelaySeconds: 15
+            periodSeconds: 20
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+  labels:
+    app: notification-service
+spec:
+  replicas: {{ .Values.notificationService.replicaCount }}
+  selector:
+    matchLabels:
+      app: notification-service
+  template:
+    metadata:
+      labels:
+        app: notification-service
+    spec:
+      containers:
+        - name: notification-service
+          image: {{ .Values.notificationService.image }}
+          imagePullPolicy: Never
+          ports:
+            - containerPort: {{ .Values.notificationService.port }}
+          env:
+            - name: ASPNETCORE_URLS
+              value: "http://+:{{ .Values.notificationService.port }}"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.notificationService.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.notificationService.port }}
+            initialDelaySeconds: 15
+            periodSeconds: 20
